@@ -1,17 +1,21 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /app
+ARG TARGETARCH
 
 # Copy csproj and restore as distinct layers
 COPY *.csproj ./
-RUN dotnet restore --runtime alpine-x64
+RUN RID="linux-musl-${TARGETARCH}" \
+  && if [ "${TARGETARCH}" = "amd64" ]; then RID="linux-musl-x64"; fi \
+  && dotnet restore --runtime "${RID}"
 
 # Copy everything else and build
 COPY . ./
-RUN dotnet publish -c Release -o out \
+RUN RID="linux-musl-${TARGETARCH}" \
+  && if [ "${TARGETARCH}" = "amd64" ]; then RID="linux-musl-x64"; fi \
+  && dotnet publish -c Release -o out \
   --no-restore \
-  --runtime alpine-x64 \
+  --runtime "${RID}" \
   --self-contained true \
-  /p:PublishTrimmed=true \
   /p:PublishSingleFile=true
 
 
